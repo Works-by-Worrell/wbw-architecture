@@ -1,7 +1,7 @@
 # ADR 0002: Repository Split and GitOps Config Separation for Works-by-Worrell
 
 ## Status
-*   **Status:** DRAFT
+*   **Status:** Approved
 *   **Author:** Roger Worrell (SSE)
 *   **Date:** 2026-07-24
 
