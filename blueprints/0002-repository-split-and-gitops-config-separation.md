@@ -1,6 +1,6 @@
 # Works-by-Worrell: Repository Split and GitOps Config Separation Migration Blueprint
 
-This migration blueprint defines the REQUIRED operations and patterns to split the current `warlock-agents` monorepo into a multi-repository model under the **Works-by-Worrell** GitHub Organization. This document is aligned with [ADR 0002: Repository Split and GitOps Config Separation](file:///home/raworre/Source/WBW/wbw-architecture/adrs/0002-repository-split-and-gitops-config-separation.md) and builds upon [ADR 0001: Cloud Migration Blueprint](file:///home/raworre/Source/WBW/warlock-agents/docs/architecture/0001-cloud-migration-blueprint.md).
+This migration blueprint defines the REQUIRED operations and patterns to split the current `warlock-agents` monorepo into a multi-repository model under the **Works-by-Worrell** GitHub Organization. This document is aligned with [ADR 0002: Repository Split and GitOps Config Separation](../adrs/0002-repository-split-and-gitops-config-separation.md) and builds upon [ADR 0001: Cloud Migration Blueprint](../adrs/0001-cloud-migration-blueprint.md).
 
 All implementation tasks described herein SHALL be executed in accordance with RFC-2119 standards. This blueprint is scoped for execution by a Senior Software Engineer (SSE).
 
@@ -46,7 +46,7 @@ The migration engineer MUST initialize the following five target repositories un
 
 ## Phase 2: Platform Infrastructure Setup (`wbw-infra`)
 
-The engineer MUST migrate the [infra/](file:///home/raworre/Source/WBW/warlock-agents/infra) folder contents to the new `wbw-infra` repository and restucture it.
+The engineer MUST migrate the `infra/` folder contents to the new `wbw-infra` repository and restucture it.
 
 ### 2.1 Reorganize Terraform Folder Structure
 To prevent config drift and enforce DRY principles, the repository structure MUST follow a directory-per-environment layout targeting a single default branch (`main`):
