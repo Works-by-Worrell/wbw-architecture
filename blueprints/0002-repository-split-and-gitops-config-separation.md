@@ -1,6 +1,6 @@
 # Works-by-Worrell: Repository Split and GitOps Config Separation Migration Blueprint
 
-This migration blueprint defines the REQUIRED operations and patterns to split the current `warlock-agents` monorepo into a multi-repository model under the **Works-by-Worrell** GitHub Organization. This document is aligned with [ADR 0002: Repository Split and GitOps Config Separation](../adrs/0002-repository-split-and-gitops-config-separation.md) and builds upon [ADR 0001: Cloud Migration Blueprint](../adrs/0001-cloud-migration-blueprint.md).
+This migration blueprint defines the REQUIRED operations and patterns to split the current `warlock-agents` monorepo into a multi-repository model under the **Works-by-Worrell** GitHub Organization. This document is aligned with [ADR 0002: Repository Split and GitOps Config Separation](../adrs/0002-repository-split-and-gitops-config-separation.md) and incorporates design review Pass 2 resolution requirements.
 
 All implementation tasks described herein SHALL be executed in accordance with RFC-2119 standards. This blueprint is scoped for execution by a Senior Software Engineer (SSE).
 
@@ -8,7 +8,7 @@ All implementation tasks described herein SHALL be executed in accordance with R
 
 ## 1. Migration Overview & Dependency Chain
 
-To avoid circular dependencies, the migration SHALL proceed according to the following phased sequence:
+To avoid circular dependencies and guarantee environment isolation, the migration SHALL proceed according to the following phased sequence:
 
 ```mermaid
 graph TD
@@ -16,11 +16,11 @@ graph TD
     classDef step fill:#1a2336,stroke:#2b4366,stroke-width:2px,color:#fff;
 
     Step1["Phase 1: Setup Github Repositories"]:::step
-    Step2["Phase 2: Deploy wbw-infra (IaC Foundations)"]:::step
+    Step2["Phase 2: Deploy wbw-infra (IaC Foundations & Clean-Slate Rebuild)"]:::step
     Step3["Phase 3: Deploy wbw-architecture"]:::step
-    Step4["Phase 4: Refactor & Deploy warlock-mcp"]:::step
-    Step5["Phase 5: Deploy wbw-config & wbw-config-private"]:::step
-    Step6["Phase 6: Monorepo Deprecation"]:::step
+    Step4["Phase 4: Refactor & Deploy warlock-mcp (Full DDD, Service Layer & Syncer Decoupling)"]:::step
+    Step5["Phase 5: Deploy wbw-config & wbw-config-private (Environment-Aware GitOps)"]:::step
+    Step6["Phase 6: Monorepo Deprecation & Credential Revocation"]:::step
 
     Step1 --> Step2
     Step2 --> Step3
@@ -39,211 +39,149 @@ The migration engineer MUST initialize the following five target repositories un
 1.  **`wbw-infra`** (Private): REQUIRED to hold Terraform code, environment variables, backend configs, and IAM policies.
 2.  **`wbw-architecture`** (Public): REQUIRED to host design records, blueprints, and cross-project decisions.
 3.  **`warlock-mcp`** (Public): REQUIRED to house the core FastMCP python server.
-4.  **`wbw-config`** (Public): REQUIRED to hold public agent prompt configurations.
+4.  **`wbw-config`** (Public): REQUIRED to hold public agent prompt configurations, profiles, and skill metadata.
 5.  **`wbw-config-private`** (Private): REQUIRED to store sensitive overlays and credential parameters.
 
 ---
 
 ## Phase 2: Platform Infrastructure Setup (`wbw-infra`)
 
-The engineer MUST migrate the `infra/` folder contents to the new `wbw-infra` repository and restucture it.
+### 2.1 Clean-Slate Rebuild Protocol
+Given greenfield constraints, the migration engineer SHALL execute a clean-slate teardown of existing GCP resources (excluding GCP project deletion):
+1. Execute `terraform destroy` against legacy `infra/` definitions in `warlock-agents`.
+2. Delete legacy GCS state bucket `gs://worksbyworrell-tf-state`.
+3. Provision new environment state buckets (e.g., `gs://wbw-tf-state-nprd`). *(Note: The `prod` state bucket is deferred, as the `prod` GCP project will not be provisioned initially).*
 
-### 2.1 Reorganize Terraform Folder Structure
-To prevent config drift and enforce DRY principles, the repository structure MUST follow a directory-per-environment layout targeting a single default branch (`main`):
+### 2.2 Reorganize Terraform Folder Structure
+To prevent config drift and enforce DRY principles, the repository structure MUST follow a directory-per-environment layout targeting a single default branch (`main`). All environments MUST explicitly pin Terraform binary and provider versions in a `versions.tf` file.
 
 ```
 wbw-infra/
 ├── modules/
 │   └── warlock-mcp/
-│       ├── main.tf           # DRY resource definitions
+│       ├── main.tf           # DRY resource definitions (Cloud Run env & secrets mapping)
 │       ├── variables.tf      # CPU/Memory and region inputs
 │       └── outputs.tf
 └── environments/
     ├── nprd/
     │   ├── main.tf           # Instantiates module/warlock-mcp (Non-Prod)
-    │   ├── variables.tf      # Env overrides (e.g. project = wbw-nprd)
+    │   ├── variables.tf      # Env overrides (e.g. project = worksbyworrell-nprd)
     │   └── backend.tf        # NPRD GCS state backend configuration
-    └── prod/
+    └── prod/                 # STUB: Demonstrates multi-project isolation (Unprovisioned)
         ├── main.tf           # Instantiates module/warlock-mcp (Prod)
-        ├── variables.tf      # Env overrides (e.g. project = wbw-prod)
+        ├── variables.tf      # Env overrides (e.g. project = worksbyworrell-prod)
         └── backend.tf        # PROD GCS state backend configuration
 ```
 
-### 2.2 Rename Resources & Establish Least Privilege Service Accounts
-Resource names MUST be refactored to align with the standard schema (`wbw-[application]-[resource_type]-[environment]`):
-
-1.  **State Buckets**:
-    *   NPRD: `wbw-tf-state-nprd`
-    *   PROD: `wbw-tf-state-prod` (renamed from generic `worksbyworrell-tf-state` in [main.tf:L4](file:///home/raworre/Source/WBW/warlock-agents/infra/main.tf#L4)).
-
-#### 2.2.1 GCS Backend Bootstrapping (CLI Bootstrapping)
-To resolve the Terraform state remote backend dependency before initialization, the migration engineer MUST manually provision the GCS backend buckets using `gcloud storage`. Running `terraform init` with a remote backend requires the target bucket to exist beforehand.
-
-Execute the following commands to provision the buckets:
-```bash
-# Provision the Non-Production State Bucket
-gcloud storage buckets create gs://wbw-tf-state-nprd \
-    --project=worksbyworrell-nprd \
-    --location=us-central1 \
-    --uniform-bucket-level-access
-
-# Provision the Production State Bucket
-gcloud storage buckets create gs://wbw-tf-state-prod \
-    --project=worksbyworrell-prod \
-    --location=us-central1 \
-    --uniform-bucket-level-access
-```
-
-2.  **Artifact Registry**: Rename generic `worksbyworrell-registry` in [main.tf:L53](file:///home/raworre/Source/WBW/warlock-agents/infra/main.tf#L53) to `wbw-global-registry`.
-3.  **Cloud Run Service**: Rename `warlock-agents-core` in [main.tf:L79](file:///home/raworre/Source/WBW/warlock-agents/infra/main.tf#L79) to `warlock-mcp-prod` / `warlock-mcp-nprd`.
-4.  **Secret Manager Secret**: Rename `github-app-token` in [main.tf:L124](file:///home/raworre/Source/WBW/warlock-agents/infra/main.tf#L124) to `warlock-mcp-github-token`.
-5.  **Service Accounts (Least Privilege)**:
-    *   The engineer MUST NOT use the default Compute Engine service account for Cloud Run execution.
-    *   Create **`warlock-mcp-runner-sa`** (Cloud Run Service Account):
-        *   MUST be granted `roles/secretmanager.secretAccessor` strictly on the secret `warlock-mcp-github-token`.
-        *   MUST be granted `roles/datastore.user` to query agent collections in GCP Firestore.
-    *   Create **`wbw-gitops-syncer-sa`** (GitOps Sync CLI Service Account):
-        *   MUST be granted `roles/datastore.user` to allow writes/deletes during GitOps runs.
-
-### 2.3 Configure Workload Identity Federation (WIF)
-The engineer MUST NOT use long-lived GCP service account JSON credentials inside GitHub secrets.
-*   Workload Identity Federation MUST be configured in `wbw-infra` to allow GitHub Actions in both `warlock-mcp` (for container builds) and `wbw-config` (for Firestore sync) to exchange GitHub OIDC tokens for short-lived GCP IAM credentials.
-*   Restrict the WIF provider trust policy specifically to the GitHub repositories: `Works-by-Worrell/warlock-mcp`, `Works-by-Worrell/wbw-config`, and `Works-by-Worrell/wbw-config-private`.
-
-### 2.4 Apply $0.00 Budget Resource Optimizations
-*   **Scale-to-Zero**: Cloud Run services MUST be configured with `min_instance_count = 0` and CPU allocation set to "only during request processing" to avoid charges.
-*   **Artifact Registry Cleanup Policy**: The repository MUST define a cleanup policy retaining only the 3 most recent versions and automatically deleting untagged images to stay below the 500 MB Free Tier limit.
+### 2.3 Resource Naming, Secret Provisioning & IAM Roles
+1.  **Artifact Registry**: Standardized to `wbw-global-registry`.
+2.  **Cloud Run Service**: Standardized to `warlock-mcp-nprd` and `warlock-mcp-prod`.
+3.  **Secret Manager Secrets vs Env Vars**:
+    *   **Secrets**: Provision Secret Manager secrets *only* for sensitive credentials to stay strictly within the 6-version free tier limit:
+        * `warlock-mcp-github-token`
+        * `warlock-mcp-youtrack-token`
+    *   **Environment Variables**: Inject non-sensitive operational settings directly via Cloud Run container environment variables:
+        * `GCP_PROJECT_ID` (Required for application strategy resolution)
+        * `YOUTRACK_URL`
+        * `YOUTRACK_PROJECT_KEY`
+        * `FASTMCP_TRANSPORT`
+4.  **Artifact Registry Cleanup Policy**: Enforce a Terraform retention policy on `wbw-global-registry` retaining only tags matching semantic version regex and the 3 most recent SHA tags to enforce the 500MB limit.
+5.  **Service Accounts & IAM Roles**:
+    * **`warlock-mcp-runner-sa`**: Granted `secretmanager.secretAccessor` on credentials and `roles/datastore.user`.
+    * **`wbw-gitops-syncer-sa`**: Granted `roles/datastore.user` for Firestore updates AND `roles/artifactregistry.reader` to allow pulling syncer images.
+6.  **WIF Trust Policies**: Bind `roles/artifactregistry.reader` to GitHub Actions workflow runner identities for both `wbw-config` and `wbw-config-private`.
+7.  **Terraform Automation**: Provision a `.github/workflows/terraform.yml` in `wbw-infra` to execute `terraform plan` on Pull Requests and `terraform apply` on merges to `main` via WIF, enforcing the prohibition of local terraform applies.
 
 ---
 
 ## Phase 3: Architectural Governance Setup (`wbw-architecture`)
 
-The engineer SHALL migrate architectural assets located in [docs/](file:///home/raworre/Source/WBW/warlock-agents/docs) (including [0001-cloud-migration-blueprint.md](file:///home/raworre/Source/WBW/warlock-agents/docs/architecture/0001-cloud-migration-blueprint.md)) into `wbw-architecture`.
-
-### 3.1 Blueprint Refactoring and Devlog Decoupling
-To maintain clean design definitions in the architectural portfolio, the engineer MUST extract all developer-specific execution logs ("Implementation & Deployment Session Notes" or "Design & Architectural Decision Notes") out of [0001-cloud-migration-blueprint.md](file:///home/raworre/Source/WBW/warlock-agents/docs/architecture/0001-cloud-migration-blueprint.md).
-*   These operational logs (e.g., WSL2 container socket bind locations, local mock data testing configs, Uvicorn CLI flags) MUST NOT be stored within core design blueprints.
-*   These details MUST be relocated to the `devlogs/` directory of the `wbw-architecture` repository.
-*   The generated devlog filenames MUST reference the corresponding ADR/Blueprint number and name they implement (e.g., `devlogs/0001-cloud-migration-devlog.md`).
-*   A central index mapping ADR statuses and design docs SHALL be created at the root of the `wbw-architecture` repository.
+Migrate architectural assets into `wbw-architecture`:
+* Extract implementation logs into `devlogs/` referencing ADR/Blueprint numbers (e.g., `devlogs/0001-cloud-migration-devlog.md`).
+* Maintain a central index mapping ADR statuses and design docs at the repository root.
 
 ---
 
 ## Phase 4: Refactor and Deploy Application Core (`warlock-mcp`)
 
-The python codebase in [python-app/](file:///home/raworre/Source/WBW/warlock-agents/python-app) and related synchronizer utilities MUST be migrated to the `warlock-mcp` repository.
+### 4.1 Full Domain-Driven Design (DDD) Repository & Service Layer Refactor
+The engineer MUST eliminate all `PROJECT_ROOT` filesystem path traversals across `agents.py`, `profiles.py`, `definitions.py`, and `skills.py`.
 
-### 4.1 Implement Domain-Driven Design (DDD) Repository Pattern
-The engineer MUST refactor the direct procedural Firestore calls in [firestore_client.py](file:///home/raworre/Source/WBW/warlock-agents/python-app/src/worksbyworrell/warlock/storage/firestore_client.py) into a DDD Repository Pattern.
+1.  **Implement DDD Repositories** under `worksbyworrell.warlock.repository`:
+    *   **`AgentRepository`** (`FirestoreAgentRepository`, `LocalAgentRepository`). *Note: The local repositories MUST support overriding target paths via environment variables (e.g., `WARLOCK_CONFIG_DIR`) to enable local sister-directory mounting for dogfooding.*
+    *   **`UserProfileRepository`** (`FirestoreUserProfileRepository`, `LocalUserProfileRepository`)
+    *   **`ResourceRepository`** (`FirestoreResourceRepository`, `LocalResourceRepository`)
+    *   **`SkillMetadataRepository`** (`FirestoreSkillMetadataRepository`, `LocalSkillMetadataRepository`)
+2.  **Implement Service Layer (Facade Pattern)** under `worksbyworrell.warlock.service`:
+    *   **`AgentSessionService`**: Injects `AgentRepository`, `UserProfileRepository`, and `SkillMetadataRepository` to compose multi-domain prompt sessions (`agent_session()`) cleanly.
+3.  **Standardize Environment Strategy Resolution**:
+    *   Standardize storage strategy resolution strictly on `GCP_PROJECT_ID`. Do not fallback to `GOOGLE_CLOUD_PROJECT` to prevent strategy resolution split-brain behavior.
 
-> [!NOTE]
-> **Java Analog:** This pattern mirrors the Spring Data JPA `Repository` pattern or a classic Java DAO interface, separating the database access client from business service logic.
+### 4.2 Decoupled Ingestion Pipeline & Framework Isolation
+* Refactor sync logic into `ConfigIngestionPipeline` inside `worksbyworrell.warlock.pipeline`.
+* **Zero FastMCP Dependency:** `ConfigIngestionPipeline` and `save_document` database helpers MUST NOT import `FastMCP` instances or server modules.
+* **Expanded Ingestion Scope & Schema Normalization:** Ingest agent specs (`agent_configurations`, `agent_overlays`), user profiles (`user_profiles`), system resources (`system_resources`), and skill metadata (`skill_metadata`). Enforce canonical snake_case document key naming.
+* **MD5 Delta-Syncing:** Calculate MD5 checksums of files and write updates only when document hashes drift.
 
-*   Define abstract base class:
-    ```python
-    # worksbyworrell/warlock/repository/base.py
-    from abc import ABC, abstractmethod
-    from worksbyworrell.warlock.domain.models import AgentConfiguration
-
-    class AgentRepository(ABC):
-        @abstractmethod
-        def get_agent_config(self, agent_id: str) -> AgentConfiguration:
-            pass
-
-        @abstractmethod
-        def save_agent_config(self, agent_config: AgentConfiguration) -> None:
-            pass
-    ```
-*   Implement concrete class `FirestoreAgentRepository` mapping storage tasks to GCP Firestore.
-*   Implement concrete class `LocalAgentRepository` acting as an offline mock database.
-*   A factory method MUST resolve the active implementation based on environment variables:
-    *   If `GCP_PROJECT_ID` is present: instantiate `FirestoreAgentRepository`.
-    *   If `GCP_PROJECT_ID` is absent: fallback to `LocalAgentRepository` loading JSON mock data from `tests/mock_data/`.
-
-### 4.2 Enforce Domain Schema Validation via Pydantic
-Direct dictionary manipulations of agent settings SHOULD NOT be used.
-*   The application MUST enforce schema validations at the data boundaries using Pydantic models.
-*   Define **`AgentConfiguration`** representing public settings.
-*   Define **`AgentOverlay`** representing private parameters (e.g. LLM credentials, system overrides).
-
-### 4.3 Refactor the Sync CLI Utility
-Refactor [sync.py](file:///home/raworre/Source/WBW/warlock-agents/python-app/src/worksbyworrell/warlock/sync.py) as a CLI module `AgentConfigIngestionPipeline` under `worksbyworrell.warlock.pipeline`.
-*   **Delta-Syncing**: To prevent exceeding the **20,000 writes/day free tier** limit on Firestore, the ingestion pipeline MUST calculate MD5 checksums of the local configuration files.
-*   This MD5 hash value MUST be saved as a field (`config_hash`) in the Firestore target document.
-*   The ingestion pipeline MUST compare local hashes against remote document hashes, executing write updates ONLY when data drift is detected.
-
-### 4.4 Package Companion Docker Container (`warlock-mcp-syncer`)
-The builder pipeline MUST output two container targets:
-1.  `warlock-mcp`: The runtime FastMCP server.
-2.  `warlock-mcp-syncer`: A lightweight companion CLI utility container executing `AgentConfigIngestionPipeline`.
-
-### 4.5 Set up `warlock-mcp` CI/CD Workflow
-The repository MUST define a `.github/workflows/deploy.yml` pipeline:
-1.  Tests Python code using `pytest`.
-2.  Authenticates to GCP using Workload Identity Federation (WIF).
-3.  Builds and pushes both `warlock-mcp` and `warlock-mcp-syncer` containers to `wbw-global-registry`.
-4.  Deploys the server to Cloud Run (`warlock-mcp-prod` / `warlock-mcp-nprd`).
+### 4.3 Container Packaging & Pinned Image Tags (Double-Tagging)
+The build pipeline MUST implement "double-tagging" for OCI image publishes to Artifact Registry. Every successful release MUST publish two image targets tagged with both the Semantic Version and the short Git SHA (e.g., `warlock-mcp:v1.2.0` AND `warlock-mcp:a1b2c3d`).
+1. `warlock-mcp` (Runtime server)
+2. `warlock-mcp-syncer` (Standalone sync CLI)
 
 ---
 
-## Phase 5: Establish GitOps Configuration Pipelines
+## Phase 5: Establish GitOps Configuration Pipelines (`wbw-config` & `wbw-config-private`)
 
-Initialize public configuration settings in `wbw-config` and private overlays in `wbw-config-private`.
+### 5.1 Repository Folder Layout
+Both config repos MUST mirror the following layout:
+```
+wbw-config/
+├── agents/        # Markdown agent personas
+├── profiles/      # Markdown user profiles
+├── resources/     # System markdown definitions (e.g. DEFINITION_OF_READY.md)
+└── skills/        # SKILL.md metadata files
+```
 
-### 5.1 Repository Folder Layouts
-*   **`wbw-config`** (Public): MUST contain public agent specifications in `agents/`.
-*   **`wbw-config-private`** (Private): MUST contain private overlays in `agents/`.
-
-### 5.2 Zero-Keys-in-Git Strategy
-Developers MUST NOT commit raw tokens or private credentials to git.
-*   Private configuration markdown files MUST use env var placeholder templates, e.g.:
-    ```yaml
-    ---
-    agent_id: warlock_prime
-    openai_api_key: ${OPENAI_API_KEY}
-    ---
-    ```
-*   The actual key values MUST be stored securely in the private repository's GitHub Secrets.
-*   The sync workflow MUST read and inject these secrets as environment variables into the CLI execution environment.
-*   `AgentConfigIngestionPipeline` MUST resolve placeholder parameters in-memory before writing the validated payloads to the Firestore database.
-
-### 5.3 Configure GitOps Workflows
-Both config repositories MUST define a `.github/workflows/sync.yml` workflow:
-1.  Triggered on commit pushes to the `main` branch affecting paths under `agents/**`.
-2.  Retrieve short-lived OIDC tokens for `wbw-gitops-syncer-sa` via WIF.
-3.  Pull the `warlock-mcp-syncer` companion container image from `wbw-global-registry`.
-4.  Execute the container, mounting local configuration files, and sync changes directly to Firestore.
+### 5.2 Environment-Aware GitOps Workflows
+Both config repositories MUST define `.github/workflows/sync.yml`:
+1.  **Authentication & Image Pull:** Authenticate via WIF (obtaining `roles/artifactregistry.reader`), pull strictly pinned image `warlock-mcp-syncer:vX.Y.Z` (never `:latest`).
+2.  **Metadata Injection:** The workflow MUST pass the current short `$GITHUB_SHA` (e.g., `${GITHUB_SHA::7}`) to the syncer CLI to attach to Firestore documents as `_version_hash` for strict config traceability.
+2.  **Validation Step:** Execute pre-sync schema linting and Pydantic validation checks on PRs.
+3.  **Environment Isolation:**
+    *   Changes targeting non-prod branches execute sync against `worksbyworrell-nprd` Firestore.
+    *   Changes targeting `main` releases execute sync against `worksbyworrell-prod` Firestore. *(Note: This is a stub configuration initially, as the prod project is unprovisioned).*
 
 ---
 
-## Phase 6: Monorepo Deprecation
+## Phase 6: Monorepo Deprecation & Credential Revocation
 
-Once verification checks succeed, the engineer SHALL deprecate the legacy `warlock-agents` monorepo:
-1.  Archive the `warlock-agents` repository.
-2.  Add a deprecation notice to its `README.md` containing links to the new modular projects.
+1. Archive `warlock-agents` monorepo.
+2. Update `README.md` with pointers to the target repositories.
+3. **Credential Revocation**:
+   * Delete legacy `GCP_SA_KEY` secret from GitHub repository secrets.
+   * Disable and delete legacy service account `github-firestore-sync` in GCP IAM.
+   * Remove dangling WIF provider bindings referencing `Works-by-Worrell/warlock-agents`.
 
 ---
 
-## 7. Verification & Validation Checklist
+## Phase 7: Local Developer Experience (Dogfooding) Setup
 
-The migration engineer MUST execute the following validation steps at each migration checkpoint:
+To establish the zero-burnout multi-repo workflow:
+1. Initialize local workspaces cloning all repositories as sister directories (e.g., `~/Source/WBW/warlock-mcp`, `~/Source/WBW/wbw-config`).
+2. Configure the primary MCP Client (Claude Desktop / CLI) to load **both** a `warlock-prod` (pointing to the live Cloud Run SSE endpoint) and a `warlock-dev` (pointing to the local `warlock-mcp` repo via `stdio`).
+3. Inject the `WARLOCK_CONFIG_DIR` and `WARLOCK_PRIVATE_CONFIG_DIR` environment variables into the `warlock-dev` MCP configuration block, pointing to the local absolute paths of the sister config repositories.
 
-| Phase | Item | Verification Steps / Command | Expected Result |
+---
+
+## 8. Verification & Validation Checklist
+
+| Phase | Item | Verification Command / Check | Expected Result |
 | :--- | :--- | :--- | :--- |
-| **Phase 2** | WIF Authentication | `gcloud iam service-accounts get-iam-policy wbw-gitops-syncer-sa` | Policy bindings contain GitHub repository OIDC mapping. |
-| **Phase 2** | Terraform Dry-Run | `terraform plan` inside `environments/nprd/` | Compilation succeeds, no resource conflicts, names match standard schema. |
-| **Phase 4** | Domain Model Tests | `pytest tests/` | All unit tests pass, verifying DDD `AgentRepository` abstraction. |
-| **Phase 4** | Offline Fallback | Execute application locally with empty `GCP_PROJECT_ID`. | System falls back to offline `LocalAgentRepository` reading test files. |
-| **Phase 5** | GitOps Sync Pipeline | Push change to `wbw-config/agents/warlock_prime.md` | Action completes successfully; document updates in Firestore database. |
-| **Phase 5** | Secret Injection | Inspect target Firestore document fields for secret key values. | Key fields show resolved secrets without trace in GitHub commit logs. |
-
----
-
-## 8. Rollback Protocol
-
-If a blocking incident occurs, the engineer SHALL revert components to their pre-migration states using this rollback protocol:
-
-1.  **Disable GitOps Syncing**: Rename `.github/workflows/sync.yml` to `sync.yml.disabled` in the config repositories.
-2.  **Restore Cloud Run Target**: Point the Cloud Run deployment back to the legacy monorepo `warlock-agents-core` image.
-3.  **Restore Secrets**: Revert secrets references in Cloud Run to target legacy `github-app-token`.
-4.  **Audit Firestore Data**: Ensure collection documents have not been corrupted. If required, execute manual correction scripts or restore collections from backup.
+| **Phase 2** | Clean-Slate IaC | `terraform apply` in `environments/nprd/` | Clean build of all resources; Cloud Run receives `GCP_PROJECT_ID` env var. |
+| **Phase 2** | IAM Permissions | `gcloud storage buckets get-iam-policy` / WIF policy check | `wbw-gitops-syncer-sa` and WIF bindings contain Artifact Registry reader role. |
+| **Phase 4** | DDD & Service Layer Coverage | `pytest tests/unit/` | Unit tests verify zero `PROJECT_ROOT` path calls in resource endpoints via `AgentSessionService`. |
+| **Phase 4** | Strategy Resolution Check | Execute container with `GCP_PROJECT_ID` set vs unset | Resolves `FirestoreAgentRepository` cleanly when set; falls back to `LocalAgentRepository` when unset. |
+| **Phase 4** | Decoupled Syncer Import | `python -c "import worksbyworrell.warlock.pipeline"` | Module loads cleanly without triggering FastMCP server instantiation. |
+| **Phase 5** | GitOps Multi-Collection Sync | Push update to `wbw-config/profiles/raworre.md` | Target Firestore `user_profiles` document updates cleanly via pinned syncer container. |
+| **Phase 5** | Non-Prod Isolation | Trigger nprd sync workflow | Non-prod Firestore updates; production Firestore remains unmodified. |
+| **Phase 6** | Credential Cleanup | `gcloud iam service-accounts list` | Legacy `github-firestore-sync` SA is deleted; `GCP_SA_KEY` revoked. |
