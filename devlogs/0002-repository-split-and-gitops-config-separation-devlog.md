@@ -61,10 +61,20 @@ The custom metadata has been created and configured across all repositories to s
 | **#1** | **Created** | `[wbw-config-private] Establish Private Configuration Repository and GitOps Secret Pipeline` | Project Migration | Major | `Warlock`, `Stability`, `Exfiltration` |
 | **#2** | **Created** | `[wbw-config-private] Write Repository README and Private Secrets Pipeline Documentation` | Project Migration | Normal | `Warlock`, `Stability` |
 
+### 📂 Repository: `wbw-workspace` (Meta-Repository Workspace)
+| Issue # | Action | Title | Milestone | Priority | Tags |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **#1** | **Created** | `[wbw-workspace] Write Developer Workspace README and Bootstrap Guidelines` | Project Migration | Normal | `Warlock`, `Stability` |
+
+### 📂 Repository: `Works-by-Worrell.github.io` (GitHub Pages Organization Site)
+| Issue # | Action | Title | Milestone | Priority | Tags |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **#3** | **Created** | `[Works-by-Worrell.github.io] Write Public Portfolio Landing Page README and Architecture Overview` | Project Migration | Normal | `Warlock`, `Stability` |
+
 ### 📂 Repository: `warlock-agents` (Legacy Monorepo Sandbox)
 | Issue # | Action | Title | Milestone | Priority | Tags |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **#39** | **Created** | `[warlock-agents] Archive and Deprecate Legacy Monorepo` | None | Minor | `Warlock`, `Stability` |
+| **#48** | **Created** | `[warlock-agents] Archive and Deprecate Legacy Monorepo` | None | Minor | `Warlock`, `Stability` |
 
 ---
 
