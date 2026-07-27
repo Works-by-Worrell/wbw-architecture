@@ -39,18 +39,18 @@ The custom metadata has been created and configured across all repositories to s
 | **#2** | **Updated** | `[wbw-architecture] Sandbox Project Migration Blueprint` | Project Migration | Normal | `Warlock`, `Stability` | **Closed** (Completed) |
 | **#3** | **Updated** | `[wbw-architecture] Migrate Cloud Migration Blueprint and Decouple Devlogs` | Project Migration | Normal | `Warlock`, `Stability` | **Closed** (Completed) |
 | **#4** | **Created** | `[wbw-architecture] Write Repository README and ADR Indexing Documentation` | Project Migration | Normal | `Warlock`, `Stability` | **Closed** (Completed) |
-| **#6** | **Created** | `[wbw-architecture] Add commit hook script and update bp0002 Dev Log` | Project Migration | Normal | `Warlock`, `Stability`, `documentation` | Open |
+| **#6** | **Created** | `[wbw-architecture] Add commit hook script and update bp0002 Dev Log` | Project Migration | Normal | `Warlock`, `Stability`, `documentation` | **Closed** (Completed) |
 
 ### 📂 Repository: `warlock-mcp` (FastMCP Core Application)
 | Issue # | Action | Title | Milestone | Priority | Tags | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **#1** | **Created** | `[warlock-mcp] Implement Domain-Driven Design (DDD) Repository Pattern` | Project Migration | Major | `Warlock`, `Stability` | Open |
-| **#2** | **Created** | `[warlock-mcp] Enforce Domain Schema Validation via Pydantic` | Project Migration | Normal | `Warlock`, `Stability` | Open |
-| **#3** | **Created** | `[warlock-mcp] Refactor Sync CLI Utility with Delta-Syncing` | Project Migration | Major | `Warlock`, `Stability` | Open |
+| **#1** | **Updated** | `[warlock-mcp] Implement Domain-Driven Design (DDD) Repository Pattern` | Project Migration | Major | `Warlock`, `Stability` | **Closed** (Completed) |
+| **#2** | **Updated** | `[warlock-mcp] Enforce Domain Schema Validation via Pydantic` | Project Migration | Normal | `Warlock`, `Stability` | **Closed** (Completed) |
+| **#3** | **Updated** | `[warlock-mcp] Refactor Sync CLI Utility with Delta-Syncing` | Project Migration | Major | `Warlock`, `Stability` | Open |
 | **#4** | **Created** | `[warlock-mcp] Package Companion Docker Container (warlock-mcp-syncer)` | Project Migration | Normal | `Warlock`, `Stability` | Open |
 | **#5** | **Created** | `[warlock-mcp] Implement GitHub Actions CI/CD Workflow` | Project Migration | Major | `Warlock`, `Stability` | Open |
-| **#6** | **Created** | `[warlock-mcp] Write Repository README and FastMCP Developer Documentation` | Project Migration | Normal | `Warlock`, `Stability` | Open |
-| **#7** | **Created** | `[warlock-mcp] Implement AgentSessionService Facade & Local Sister-Directory Mounting` | Project Migration | Major | `Warlock`, `Stability` | Open |
+| **#6** | **Created** | `[warlock-mcp] Write Repository README and FastMCP Developer Documentation` | Project Migration | Normal | `Warlock`, `Stability` | **Closed** (Completed) |
+| **#7** | **Updated** | `[warlock-mcp] Implement AgentSessionService Facade & Local Sister-Directory Mounting` | Project Migration | Major | `Warlock`, `Stability` | **Closed** (Completed) |
 
 ### 📂 Repository: `wbw-config` (Public Configuration)
 | Issue # | Action | Title | Milestone | Priority | Tags | Status |
@@ -125,3 +125,14 @@ All dependencies are defined in the **Technical Implementation Plan** and **Acce
 - **Actions:**
   * **Central Documentation Registry:** Created `README.md` and `CHANGELOG.md` guides for all new repositories (`wbw-workspace`, `warlock-mcp`, `wbw-config`, `wbw-config-private`, `Works-by-Worrell.github.io`).
   * **Unified Contribution Guidelines:** Created `CONTRIBUTING.md` standards in every repository and updated the central root workspace rules to establish the `gov` scope as a valid, globally accepted commit boundary.
+
+### Phase 4: Refactor and Deploy Application Core (`warlock-mcp`)
+- **Execution Date:** 2026-07-26
+- **Key Milestones:** Completed DDD Repository Refactor, Pydantic Schema Validation, Agent Session Service Facade, and decoupled MCP Resources. Implemented core Ingestion Pipeline with MD5 delta-syncing.
+- **Actions:**
+  * **DDD Repository Pattern (Issue #1):** Designed abstract repository interfaces and implemented local filesystem and Firestore concrete strategies.
+  * **Pydantic Validation (Issue #2):** Enforced runtime schema constraint validations for Agents, User Profiles, Skills, and Resources, with corresponding unit tests.
+  * **Ingestion Pipeline Core (Issue #3):** Implemented a decoupled `ConfigIngestionPipeline` with MD5 checksum verification and `GITHUB_SHA`-derived version hash injection to enable delta-syncing without loading FastMCP.
+  * **Service Facade & MCP Resource Decoupling (Issue #7):** Created `AgentSessionService` to compile prompt sessions and refactored resources (`agents.py`, `profiles.py`, `skills.py`, `definitions.py`) to resolve data using the service/repository layers, achieving zero direct path traversal in MCP resources.
+  * **Integration Testing:** Extended the unit test suite from 40 to 58 tests, achieving 100% green coverage.
+  * **YAGNI Dynamic Tools Removal & PROJECT_ROOT Elimination (Phase 4.1):** Removed unused dynamic skill tool loading (`load_dynamic_skills_tools` and `get_skill_path` from [skills.py](file:///home/raworre/Source/WBW/warlock-mcp/src/worksbyworrell/warlock/resources/skills.py)), completely eliminating any remaining `PROJECT_ROOT` path traversals from the active FastMCP resources layer.
