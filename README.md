@@ -79,7 +79,7 @@ Create a new file in `adrs/` utilizing the standard template below.
 [Describe the technical problem, user requirements, and constraints. Cite direct code paths or configurations if applicable.]
 
 ## 2. Decision Driver & Trade-offs
-[List the factors influencing the decision, e.g., $0-cost budget limits, latency requirements, security exfiltration risks.]
+[List the factors influencing the decision, e.g., $0-cost budget limits, latency requirements, security risks.]
 
 ## 3. Proposed Resolution
 [Detail the selected approach. Use Mermaid diagrams where appropriate to describe component interactions.]
