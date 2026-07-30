@@ -1,7 +1,7 @@
 # Devlog: Repository Split and GitOps Config Separation
 
 - **Date:** 2026-07-25
-- **Status:** Phase 2 Completed (IaC Foundations & Clean-Slate Rebuild)
+- **Status:** Phase 4 Completed (DDD Refactor, Ingestion Decoupling & Deployment Automation)
 - **Scope:** Phased execution of repository splits, terraform folder reorganization, OIDC setup, CI/CD automation, and developer hygiene controls.
 
 ---
@@ -46,9 +46,9 @@ The custom metadata has been created and configured across all repositories to s
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **#1** | **Updated** | `[warlock-mcp] Implement Domain-Driven Design (DDD) Repository Pattern` | Project Migration | Major | `Warlock`, `Stability` | **Closed** (Completed) |
 | **#2** | **Updated** | `[warlock-mcp] Enforce Domain Schema Validation via Pydantic` | Project Migration | Normal | `Warlock`, `Stability` | **Closed** (Completed) |
-| **#3** | **Updated** | `[warlock-mcp] Refactor Sync CLI Utility with Delta-Syncing` | Project Migration | Major | `Warlock`, `Stability` | Open |
-| **#4** | **Created** | `[warlock-mcp] Package Companion Docker Container (warlock-mcp-syncer)` | Project Migration | Normal | `Warlock`, `Stability` | Open |
-| **#5** | **Created** | `[warlock-mcp] Implement GitHub Actions CI/CD Workflow` | Project Migration | Major | `Warlock`, `Stability` | Open |
+| **#3** | **Updated** | `[warlock-mcp] Refactor Sync CLI Utility with Delta-Syncing` | Project Migration | Major | `Warlock`, `Stability` | **Closed** (Completed) |
+| **#4** | **Created** | `[warlock-mcp] Package Companion Docker Container (warlock-mcp-syncer)` | Project Migration | Normal | `Warlock`, `Stability` | **Closed** (Completed) |
+| **#5** | **Created** | `[warlock-mcp] Implement GitHub Actions CI/CD Workflow` | Project Migration | Major | `Warlock`, `Stability` | **Closed** (Completed) |
 | **#6** | **Created** | `[warlock-mcp] Write Repository README and FastMCP Developer Documentation` | Project Migration | Normal | `Warlock`, `Stability` | **Closed** (Completed) |
 | **#7** | **Updated** | `[warlock-mcp] Implement AgentSessionService Facade & Local Sister-Directory Mounting` | Project Migration | Major | `Warlock`, `Stability` | **Closed** (Completed) |
 
@@ -136,3 +136,12 @@ All dependencies are defined in the **Technical Implementation Plan** and **Acce
   * **Service Facade & MCP Resource Decoupling (Issue #7):** Created `AgentSessionService` to compile prompt sessions and refactored resources (`agents.py`, `profiles.py`, `skills.py`, `definitions.py`) to resolve data using the service/repository layers, achieving zero direct path traversal in MCP resources.
   * **Integration Testing:** Extended the unit test suite from 40 to 58 tests, achieving 100% green coverage.
   * **YAGNI Dynamic Tools Removal & PROJECT_ROOT Elimination (Phase 4.1):** Removed unused dynamic skill tool loading (`load_dynamic_skills_tools` and `get_skill_path` from [skills.py](file:///home/raworre/Source/WBW/warlock-mcp/src/worksbyworrell/warlock/resources/skills.py)), completely eliminating any remaining `PROJECT_ROOT` path traversals from the active FastMCP resources layer.
+
+### Phase 4 (Continued): Packaging & CI/CD Release Automation
+- **Execution Date:** 2026-07-29
+- **Key Milestones:** Completed Multi-stage Dockerfile packaging for both server and syncer targets, OIDC Workload Identity Federation configuration, and automated GitHub Actions deployment.
+- **Actions:**
+  * **Multi-Stage Containerization (Issue #4):** Designed and built a multi-stage `Dockerfile` utilizing `uv` caching layer patterns. Optimized uncompressed layer footprint (~300MB) and validated automated registry compression (~75MB). Pushed target images for `warlock-mcp` and `warlock-mcp-syncer`.
+  * **OIDC WIF Access Control (Issue #2 in wbw-infra):** Updated non-production (`nprd`) and production (`prod`) bootstrap configurations in `wbw-infra` to grant workload identity federation impersonation rights (`roles/iam.workloadIdentityUser`) to the `Works-by-Worrell/warlock-mcp` repository.
+  * **GHA CI/CD Release Automation (Issue #5):** Implemented `.github/workflows/deploy.yaml` triggering on pushes to `main` branch. Integrated OIDC authentication, Buildx build caching, automatic version extraction from `pyproject.toml`, short Git SHA tagging, and zero-downtime Cloud Run service deployment.
+  * **Multi-Domain Private Sync (Issue #3):** Expanded the sync scope to handle private user profile overlays (`user_profile_overlays`), ensuring complete delta-syncing alignment for both public and private repository configuration domains.
