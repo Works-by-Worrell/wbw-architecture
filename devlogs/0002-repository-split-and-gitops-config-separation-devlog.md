@@ -1,7 +1,7 @@
 # Devlog: Repository Split and GitOps Config Separation
 
 - **Date:** 2026-07-25
-- **Status:** Phase 4 Completed (DDD Refactor, Ingestion Decoupling & Deployment Automation)
+- **Status:** Completed
 - **Scope:** Phased execution of repository splits, terraform folder reorganization, OIDC setup, CI/CD automation, and developer hygiene controls.
 
 ---
@@ -154,6 +154,19 @@ All dependencies are defined in the **Technical Implementation Plan** and **Acce
   * **GCP WIF OIDC Authentication:** Fixed GitHub Actions authorization context by configuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to securely read the Google Auth Action's dynamically generated credentials file path, resolving workload identity permission denials.
   * **Database Targeting:** Extended the `warlock-mcp-syncer` CLI with a `--database` flag to enable non-default Firestore database specification across multiple environments.
   * **Private Overlay Optimization:** Refactored `cli.py` to decouple `--public-dir` and `--private-dir` into optional flags, preventing `argparse` execution crashes when running zero-trust private repository syncs. 
-  * **Container Image Optimization:** Shipped the final multi-stage `syncer` container iteration (`v0.0.7`), landing the uncompressed deployment artifact size at ~183.6MB.
+  * **Container Image Optimization:** Shipped the final multi-stage `syncer` container iteration (`v0.0.6`), landing the uncompressed deployment artifact size at ~183.6MB.
   * **Domain Routing Migration:** Rerouted Cloud Run Custom Domain Mapping via GCP Console to connect `warlock-nprd.worksbyworrell.com` directly to the new `warlock-mcp-nprd` production service.
   * **Local Dogfooding Setup (Phase 7):** Configured Antigravity CLI's native `settings.json` to mount the local `warlock-dev` MCP server pointing to absolute local `wbw-config` directories, enabling a hot-reloading development loop.
+  * **Private Config Consolidation:** Synthesized 6 legacy profile/lore documents from `.private` into a single, highly-structured `raworre.md` schema-compliant User Profile. This eliminated context bloat while preserving neuro-cognitive architecture, AI alignment rules, and hardware environment data.
+  * **Zero-Trust Pipeline Hardening:** Audited and corrected the `wbw-config-private` GitOps workflow YAML to explicitly utilize the `--private-dir` ingestion path, preventing catastrophic data leakage of private agents/profiles into public database collections.
+  * **Dependency Injection Refactor:** Eliminated `(default)` database fallback errors by centralizing Firestore client instantiation within the DDD repository factory (`_get_firestore_client`) and enforcing explicit client dependency injection across all concrete `Firestore*Repository` classes. Removed deprecated `storage` namespace and `sync.py`. Cleaned up `Dockerfile` and GitHub Actions `deploy.yaml` by removing dead syncer pipeline stages.
+  * **Enhancements Backlog:** Instantiated `ENHANCEMENTS_BACKLOG.md` within `wbw-architecture` to track future capabilities, specifically scoping private overlays for `resources` and `skills`, as well as post-migration DDD refactoring.
+
+### Phase 6: Autonomous Job Pipeline & SSE Stabilization (Closing Phase)
+- **Execution Date:** 2026-07-31
+- **Key Milestones:** Fixed Cloud Run SSE connectivity and successfully orchestrated the Clutch/Torque autonomous job hunting pipeline.
+- **Actions:**
+  * **SSE Timeout Resolution:** Diagnosed dropped SSE connections as a Cloud Run 5-minute default timeout. Updated `wbw-infra/modules/warlock-mcp/main.tf` to force a `3600s` timeout limit.
+  * **Resume Modernization:** Re-wrote the primary resume (`Worrell_Resume_2023.md`) to reflect exact "Meat & Salt" scaling metrics, legacy monolith navigation (J.B. Hunt), and AI workflow engineering. 
+  * **Exfiltration Protocol Injection:** Updated the `raworre` private profile with a strict $150k target, remote/async validation rules, and a lateral fallback safety net.
+  * **Orchestrator Pipeline:** Built `nightly_evaluator.py`, a zero-friction ingestion script that scrapes job descriptions from `hopper.txt`, invokes `gemini-3.6-flash` against the Clutch JSON schema, and successfully routes "PROCEED" verdicts through the MCP to generate YouTrack issues via Torque.
