@@ -21,5 +21,11 @@ This document serves as a staging ground for architectural enhancements, technic
 ## 3. Infrastructure & Deployment
 *(No pending infrastructure enhancements at this time)*
 
+## 4. UI / Frontend Enhancements
+### **Interactive REST API / Swagger Style Resume Layout**
+- **Context:** An idea to put together a REST API Client page that functions as a resume.
+- **Requirement:** Build an interactive REST API / Swagger style resume layout using plain HTML, CSS, and client-side JavaScript. This should result in a fully mocked-up Swagger-looking page (or another similar API UI).
+- **Impact:** Provides a highly technical, unique, and interactive resume experience.
+
 ---
 *Note: Once an item is converted into a GitHub Issue, move it to a "Triaged" section or remove it from this backlog.*
