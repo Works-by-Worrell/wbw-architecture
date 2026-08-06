@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-The initial architecture for the Works by Worrell (WBW) Enterprise Agent Governance platform relied on a GitHub Actions CI/CD pipeline to synchronize Markdown configuration files (Agent definitions like `dyno.md` and User Profiles like `default.md`) from the `wbw-config-private` repository into a NoSQL Firestore database. 
+The initial architecture for the Works by Worrell (WBW) Enterprise Agent Governance platform relied on a GitHub Actions CI/CD pipeline to synchronize Markdown configuration files (Agent definitions like `dyno.md`, User Profiles like `default.md`, and System Resources) from the `wbw-config-private` repository into a NoSQL Firestore database. 
 
 However, during active development, we identified three critical flaws with this architecture:
 1. **CI/CD Throttling:** Relying on free-tier GitHub hosted runners introduced unacceptable latency (up to 15+ minutes) in syncing configuration to Firestore, causing the active MCP server to operate on stale governance rules and profiles.
@@ -12,7 +12,7 @@ However, during active development, we identified three critical flaws with this
 3. **Cost Inefficiency:** Writing static configuration data to a NoSQL datastore incurs unnecessary write/read operation costs on GCP.
 
 ## Decision
-We will bypass the Firestore database entirely for static Agent Governance rules and User Profiles. The legacy GitHub Action Firestore sync pipelines will be fully deprecated and removed.
+We will bypass the Firestore database entirely for static Agent Governance rules, User Profiles, and System Resources. The legacy GitHub Action Firestore sync pipelines will be fully deprecated and removed.
 
 Instead, the `warlock-mcp` server will use the GitHub REST API to read these Markdown definitions directly from the `main` branch of the `wbw-config-private` repository in real-time.
 
