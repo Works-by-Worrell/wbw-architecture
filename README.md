@@ -53,6 +53,7 @@ All system evolution steps are documented, traced, and tracked according to this
 | **0005** | WBW Daemon Plugin Architecture | [initiatives/0005-wbw-daemon/](initiatives/0005-wbw-daemon/) | **Completed** |
 | **0006** | Warlock MCP GitHub Tools | [initiatives/0006-github-mcp-tools/](initiatives/0006-github-mcp-tools/) | **Completed** |
 | **0007** | Local STDIO MCP Extrication Strategy | [initiatives/0007-local-mcp-extrication/](initiatives/0007-local-mcp-extrication/) | **Completed** |
+| **0008** | Local Filesystem State Management | [initiatives/0008-local-state-management/](initiatives/0008-local-state-management/) | **Completed** |
 
 ---
 
