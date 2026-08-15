@@ -10,6 +10,11 @@ However, subsequent architectural decisions (see [ADR 0007](../0007-local-mcp-ex
 
 By continuing to utilize GCS for state synchronization, the architecture unnecessarily maintained a tether to Google Cloud Platform (GCP). This introduced IAM complexity, required maintaining cloud service account keys in the local `.env` file, and violated the core objective of a strictly $0.00, cloud-agnostic execution environment.
 
+## Organizational Learnings: The "Non-Existent Problem"
+We must acknowledge that building a robust cloud-syncing cache manager was an attempt to solve a problem that did not exist. By over-indexing on horizontal scaling (running the Harvester across multiple machines), we introduced massive architectural friction to a tool that is fundamentally designed to execute chronologically on a single, centralized node.
+
+However, the time spent decoupling the cognitive layer and establishing the Local MCP execution model (ADR 0007) yielded a massive, unintended financial payoff. Because we now rely on local tools exposed via MCP rather than cloud-native LLM plugins, we gain the ability to spawn local subagents (e.g., Dyno) that can execute web searches locally for free. This completely eliminates the exorbitant $0.035/call surcharge imposed by cloud LLM API grounding tools, cementing the value of the decentralized edge-execution architecture.
+
 ## Decision
 We will entirely deprecate and remove the `GCSCacheManager` from the `eldritch-harvester` ecosystem. 
 
