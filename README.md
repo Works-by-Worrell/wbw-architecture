@@ -23,13 +23,19 @@ To prevent IDE clutter, maintain clean development scopes, and enforce independe
 
 ## 2. Directory Taxonomy
 
-To ensure structured document navigation, this repository separates architectural governance into three distinct pillars:
+To prevent the "40 Confluence pages" anti-pattern and ensure highly cohesive documentation, this repository organizes architectural governance into **Initiative Bundles** and a core Constitutional **Manifesto**.
 
-| Directory | Content Type | Core Question Addressed | Target Audience |
+| Directory | Content Type | Core Purpose | Target Audience |
 | :--- | :--- | :--- | :--- |
-| [adrs/](adrs/) | **Architecture Decision Records** | **Why** we chose a design (Context & Decisions) | Lead Architect / Senior Engineers |
-| [blueprints/](blueprints/) | **Engineering Blueprints** | How we **SHOULD** build it (Plans & Specs) | Implementation Engineers |
-| [devlogs/](devlogs/) | **Developer Execution Logs** | How we **ACTUALLY** built it (Execution & Retrospectives) | Release Managers / Audit Agents |
+| [manifesto/](manifesto/) | **11 Principles Manifesto** | The foundational philosophy and constitutional rules governing the entire organization. | All Engineers & Agents |
+| [initiatives/](initiatives/) | **Architecture Decision Bundles** | Bounded context folders containing all decisions, blueprints, and logs for a single architectural sequence. | Lead Architect / Implementation Engineers |
+
+### Inside an Initiative Bundle
+
+Every `initiatives/000N-slug/` directory contains up to three file types:
+1. **`adr.md` (Architecture Decision Record)**: **Why** we chose a design (Context & Decisions).
+2. **`blueprint.md` (Engineering Blueprint)**: How we **SHOULD** build it (Plans & Specs).
+3. **`devlog.md` (Developer Execution Log)**: How we **ACTUALLY** built it (Execution & Retrospectives).
 
 ---
 
@@ -37,13 +43,14 @@ To ensure structured document navigation, this repository separates architectura
 
 All system evolution steps are documented, traced, and tracked according to this unified index matrix:
 
-| Index | Type | Title / Focus | Associated Files | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **0001** | Blueprint | **Cloud-Native, $0-Cost Portfolio Showcase Engineering Plan** | [0001-cloud-migration-blueprint.md](blueprints/0001-cloud-migration-blueprint.md) | **Completed** |
-| **0001** | Devlog | **Cloud Migration Phase 1-5 Execution Timeline** | [0001-cloud-migration-implementation-notes.md](devlogs/0001-cloud-migration-implementation-notes.md) | **Completed** |
-| **0002** | ADR | **Repository Split and GitOps Config Separation** | [0002-repository-split-and-gitops-config-separation.md](adrs/0002-repository-split-and-gitops-config-separation.md) | **Approved** |
-| **0002** | Blueprint | **Modular Repo Ingestion and Config Migration Guide** | [0002-repository-split-and-gitops-config-separation.md](blueprints/0002-repository-split-and-gitops-config-separation.md) | **Approved** |
-| **0002** | Devlog | **Migration Milestone and Issues Log** | [0002-repository-split-and-gitops-config-separation-devlog.md](devlogs/0002-repository-split-and-gitops-config-separation-devlog.md) | **In Flight** |
+| Index | Initiative | Associated Bundle | Status |
+| :--- | :--- | :--- | :--- |
+| **0001** | Cloud-Native Migration Strategy | [initiatives/0001-cloud-migration/](initiatives/0001-cloud-migration/) | **Completed** |
+| **0002** | Repository Split and GitOps Config Separation | [initiatives/0002-repository-split/](initiatives/0002-repository-split/) | **Completed** |
+| **0003** | Eldritch Harvester Pipeline | [initiatives/0003-eldritch-harvester/](initiatives/0003-eldritch-harvester/) | **Completed** |
+| **0004** | GitOps Agent Governance Datastore | [initiatives/0004-governance-datastore/](initiatives/0004-governance-datastore/) | **Approved** |
+| **0005** | WBW Daemon Plugin Architecture | [initiatives/0005-wbw-daemon/](initiatives/0005-wbw-daemon/) | **Completed** |
+| **0006** | Cloud Run $0 Extrication Pivot | [initiatives/0006-cloud-run-mcp/](initiatives/0006-cloud-run-mcp/) | **Completed** |
 
 ---
 
@@ -64,8 +71,11 @@ To maintain a production-grade codebase that is modular, maintainable, and easil
 
 When proposing major modifications to the system footprint (such as introducing database changes, routing modifications, or third-party integrations), engineers MUST adhere to the following sequence:
 
-### Step 1: Draft the ADR
-Create a new file in `adrs/` utilizing the standard template below. 
+### Step 1: Initialize the Bundle
+Create a new directory under `initiatives/` named `000N-descriptive-slug/`.
+
+### Step 2: Draft the ADR
+Create an `adr.md` file within the bundle utilizing the standard template below. 
 
 ```markdown
 # ADR [Number]: [Descriptive Title]
@@ -89,8 +99,8 @@ Create a new file in `adrs/` utilizing the standard template below.
 *   **Negative:** [e.g., added ingestion pipeline step, increased local test complexity]
 ```
 
-### Step 2: Formulate the Blueprint
-If the ADR requires multi-phase execution (e.g., repository restructures, terraform migrations), author a step-by-step engineering blueprint in `blueprints/` using **RFC-2119 standards** (`MUST`, `SHOULD`, `MAY`) to outline validation rules, directory mappings, and testing strategies.
+### Step 3: Formulate the Blueprint
+If the ADR requires multi-phase execution (e.g., repository restructures, terraform migrations), author a `blueprint.md` in the bundle using **RFC-2119 standards** (`MUST`, `SHOULD`, `MAY`) to outline validation rules, directory mappings, and testing strategies.
 
-### Step 3: Log the Retrospective Devlog
-Upon completing milestones, write the devlog in `devlogs/` documenting key execution dates, issues backfilled, or custom configuration notes (e.g., WSL toolchain overrides or specific domain ingress setups).
+### Step 4: Log the Retrospective Devlog
+Upon completing milestones, write a `devlog.md` in the bundle documenting key execution dates, issues backfilled, or post-mortem failure analysis (e.g., the Cloud Run pivot).
