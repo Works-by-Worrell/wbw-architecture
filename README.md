@@ -45,12 +45,14 @@ All system evolution steps are documented, traced, and tracked according to this
 
 | Index | Initiative | Associated Bundle | Status |
 | :--- | :--- | :--- | :--- |
-| **0001** | Cloud-Native Migration Strategy | [initiatives/0001-cloud-migration/](initiatives/0001-cloud-migration/) | **Completed** |
+| **0000** | Tailscale Remote Execution Baseline | [initiatives/0000-tailscale-baseline/](initiatives/0000-tailscale-baseline/) | **Deprecated** |
+| **0001** | Cloud-Native Migration Strategy | [initiatives/0001-cloud-migration/](initiatives/0001-cloud-migration/) | **Deprecated** |
 | **0002** | Repository Split and GitOps Config Separation | [initiatives/0002-repository-split/](initiatives/0002-repository-split/) | **Completed** |
 | **0003** | Eldritch Harvester Pipeline | [initiatives/0003-eldritch-harvester/](initiatives/0003-eldritch-harvester/) | **Completed** |
-| **0004** | GitOps Agent Governance Datastore | [initiatives/0004-governance-datastore/](initiatives/0004-governance-datastore/) | **Approved** |
+| **0004** | GitOps Agent Governance Datastore | [initiatives/0004-governance-datastore/](initiatives/0004-governance-datastore/) | **Completed** |
 | **0005** | WBW Daemon Plugin Architecture | [initiatives/0005-wbw-daemon/](initiatives/0005-wbw-daemon/) | **Completed** |
-| **0006** | Cloud Run $0 Extrication Pivot | [initiatives/0006-cloud-run-mcp/](initiatives/0006-cloud-run-mcp/) | **Completed** |
+| **0006** | Warlock MCP GitHub Tools | [initiatives/0006-github-mcp-tools/](initiatives/0006-github-mcp-tools/) | **Completed** |
+| **0007** | Local STDIO MCP Extrication Strategy | [initiatives/0007-local-mcp-extrication/](initiatives/0007-local-mcp-extrication/) | **Completed** |
 
 ---
 
