@@ -1,7 +1,7 @@
 # ADR 0005: WBW Daemon Plugin Architecture
 
 ## Status
-Proposed
+Deprecated (Superseded by Initiative 0009)
 
 ## Context
 We need a consistent, reliable connection to the Cloud Run MCP server for agentic workflows. We evaluated multiple approaches and determined that encapsulating the connection logic within an Antigravity plugin is the optimal strategy. The plugin will provide the necessary tooling to securely proxy to Cloud Run and bootstrap the agent's identity context.
